@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+
+            text-align: center;
+        }
+
+        .table {
+            width: 100%;
+            display: table;
+        }
+
+        .tablerow {
+            display: table-row;
+        }
+
+        .left,
+        .right {
+            width: 50%;
+            display: table-cell;
+        }
+
+        textarea {
+            font-size: 1.2em;
+            display: block;
+            margin: 10px auto;
+            width: 400px;
+            height: 100px;
+            resize: none;
+        }
+
+        .btn {
+            background-color: white;
+            border: solid 2px grey;
+            display: inline-block;
+            margin: 10px;
+            vertical-align: middle;
+            text-align: center;
+            padding: 5px;
+            line-height: 1em;
+            transition: all 0.8s, background-color 0s;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #0090ff;
+            box-shadow: 1px 2px 5px 2px grey;
+            border: solid 2px white;
+        }
+
+        .btn:active {
+            background-color: #0075ce;
+        }
+
+        table {
+            margin-left: 20px;
+            margin-right: 20px;
+            border: thin solid black;
+            caption-side: bottom;
+            border-collapse: collapse;
+        }
+
+        table table th {
+            background-color: white;
+        }
+
+        td,
+        th {
+            width: 80px;
+            border: thin dotted gray;
+            padding: 5px;
+        }
+
+        table {
+            height: 100%;
+            width: 80%;
+        }
+
+        .invisible {
+            display: none;
+        }
+
+        .sort {
+            background-color: lightgray;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="table">
+        <div class="tablerow">
+            <div class="left">
+                <textarea id="inputData" name="Data" placeholder="Formatted Data."></textarea>
+                <div id="genBtn" class="btn">Generate</div><br>
+                [{"名称":"a","价格":"1000","数量":"15","种类":"1"},{"名称":"b","价格":"500","数量":"5","种类":"2"},{"名称":"c","价格":"700","数量":"6","种类":"1"},{"名称":"d","价格":"1046","数量":"8","种类":"1"},{"名称":"e","价格":"6500","数量":"65","种类":"2"}]
+            </div>
+
+            <div class="right">
+                <table>
+
+                </table>
+            </div>
+        </div>
+
+
+    </div>
+
+
+</body>
+<script src="./jquery-3.4.1.js"></script>
+<script>
+    var genButton = $("#genBtn");
+    var data = [];
+    var checkFlag = "";
+    var sortFlag = true;
+    var isUpdating = false;
+    var notFirst = false;
+
+
+    function addrow(index) {
+        var newRow = document.createElement("tr");
+        $(newRow).attr("index", index);
+        for (var temp in data[index]) {
+            var newHead = document.createElement("td");
+            newHead.innerHTML = data[index][temp];
+            newHead.setAttribute("index", temp);
+            $(newRow).append(newHead);
+        }
+        var newHead = document.createElement("td");
+        var delBtn = document.createElement("button");
+        delBtn.innerHTML = "delete";
+        delBtn.onclick = delRow;
+        var updateBtn = document.createElement("button");
+        updateBtn.innerHTML = "update";
+        updateBtn.onclick = updateRow;
+        $(newHead).append(delBtn);
+        $(newHead).append(updateBtn);
+        $(newRow).append(newHead);
+        $("table").append(newRow);
+    }
+
+    function delRow() {
+        var thisRow = $(this).parent().parent();
+        thisRow.addClass("del");
+        $("tr").remove(".del");
+    }
+
+    function updateRow() {
+        console.log("*");
+        isUpdating = true;
+        $(this).attr("disabled", "");
+        $(this).siblings().addClass("invisible");
+        var thisRow = $(this).parent().parent();
+        thisRow.css("background-color", "lightgrey");
+        var doneBtn = document.createElement("button");
+        doneBtn.innerHTML = "done";
+        doneBtn.onclick = doUpdate;
+        $(this).parent().append(doneBtn);
+        $(this).siblings().click(doUpdate);
+        var data = thisRow.children();
+        for (var i = 0; i < data.length - 1; i++) {
+            var temp = $(data[i]).text();
+            $(data[i]).empty();
+            var input = document.createElement("input");
+            $(input).attr("type", "text");
+            $(input).css("width", "70px");
+            $(input).val(temp);
+            $(data[i]).append(input);
+        }
+    }
+
+    function doUpdate() {
+        var thisRow = $(this).parent().parent();
+        thisRow.css("background-color", "transparent");
+        var data = thisRow.children();
+        for (var i = 0; i < data.length - 1; i++) {
+            var temp = $(data[i]).children().val();
+            $(data[i]).empty();
+            $(data[i]).text(temp);
+        }
+        $(this).siblings().removeClass("invisible");
+        $(this).siblings().removeAttr("disabled");
+        $(this).remove();
+        isUpdating = false;
+
+    }
+
+    function tableSort() {
+        if(isUpdating){
+            return;
+        }
+        $(".sort").removeClass("sort"); //更改被排序属性的样式
+        $(this).addClass("sort");
+        var checkFlag = $(this).text(); //被排序属性
+        var sortData = [];
+        var rows = $(this).parent().siblings();
+        var cells = $("td[index=" + checkFlag + "]"); //所有被排序属性的具体值所在的单元格
+        for (var i = 0; i < rows.length; i++) {
+            var temp = $(cells[i]);
+            sortData.push(temp.text()); //获取到未排序序列
+        }
+        if (parseInt(sortData[0])) { //使用sort()排序，分为数字和字符串，sortFlag是顺序和逆序的标记
+            sortData.sort((a, b) => a - b);
+        } else {
+            sortData.sort();
+        }
+        if (!sortFlag) {
+            sortData.reverse();
+        }
+        sortFlag = !sortFlag;
+
+        for (i = 0; i < sortData.length; i++) { //遍历已经排序的属性值数组，将对应表格行拷贝一份加入到表格底部，并删除原行
+            var temp = $("td:contains(" + sortData[i] + ")[index=" + checkFlag + "]").eq(0).parent();
+            var copy = temp.clone(true, true);
+            if(!notFirst){
+                $(copy).children("td:last-child").children().unbind("click");//不管怎么样解绑就行了
+                $(copy).children("td:last-child").children().eq(0).click(delRow); //clone()不知道为什么没有赋值子元素的事件处理器
+                $(copy).children("td:last-child").children().eq(1).click(updateRow);
+            }
+            notFirst = !notFirst;
+            $("table").append(copy);
+            // temp.clone(true).appendTo("table");
+            temp.remove();
+        }
+    }
+
+    genButton.click(function () {
+        $("table").empty();
+        var input = $("#inputData").prop("value");
+        try {
+            data = JSON.parse(input);
+        } catch (err) {
+            alert("Incorrect Format.");
+        }
+
+        var newRow = document.createElement("tr");
+        for (var temp in data[0]) {
+            var newHead = document.createElement("th");
+            newHead.innerHTML = temp;
+            $(newHead).css("cursor", "pointer");
+            $(newHead).click(tableSort);
+            $(newRow).append(newHead);
+        }
+        var newHead = document.createElement("th");
+        $(newRow).append(newHead);
+        $("table").append(newRow);
+        for (var i = 0; i < data.length; i++) {
+            addrow(i);
+        }
+
+    });
+    //[{"名称":"a","价格":"1000","数量":"15","种类":"1"},{"名称":"b","价格":"500","数量":"5","种类":"2"},{"名称":"c","价格":"700","数量":"6","种类":"1"},{"名称":"d","价格":"1046","数量":"8","种类":"1"},{"名称":"e","价格":"6500","数量":"65","种类":"2"}]
+</script>
+
+</html>
