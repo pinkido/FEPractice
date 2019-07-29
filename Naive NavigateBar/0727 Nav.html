@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+
+            text-align: center;
+        }
+
+        .table {
+            width: 100%;
+            display: table;
+        }
+
+        .tablerow {
+            display: table-row;
+        }
+
+        .left,
+        .right {
+            width: 50%;
+            display: table-cell;
+        }
+
+        textarea {
+            font-size: 1.2em;
+            display: block;
+            margin: 10px auto;
+            width: 400px;
+            height: 100px;
+            resize: none;
+        }
+
+        .btn {
+            background-color: white;
+            border: solid 2px grey;
+            display: inline-block;
+            margin: 10px;
+            vertical-align: middle;
+            text-align: center;
+            padding: 5px;
+            line-height: 1em;
+            transition: all 0.8s, background-color 0s;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #0090ff;
+            box-shadow: 1px 2px 5px 2px grey;
+            border: solid 2px white;
+        }
+
+        .btn:active {
+            background-color: #0075ce;
+        }
+
+        .nav{
+            transition: all 0.5s;
+        }
+
+        .nav:hover{
+            box-shadow: 1px 2px 5px 2px gray;
+            text-shadow: 2px 2px 3px white;
+        }
+
+        .firstNav{
+            background-color: black;
+            cursor: pointer;
+            color: white;
+            width: 200px;
+            padding: 10px;
+        }
+
+        .secondNav{
+            background-color: #0090ff;
+            cursor: pointer;
+            color: white;
+            width: 180px;
+            padding: 10px;
+        }
+
+        .childNavs {
+            display: none;
+            overflow: hidden;
+            height: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="table">
+        <div class="tablerow">
+            <div class="left">
+                <textarea id="inputData" name="Data" placeholder="Formatted Data."></textarea>
+                <div id="genBtn" class="btn">Generate</div><br>
+                [{"nav":"一级导航","child":[{"nav":"二级导航"},{"nav":"二级导航A"}]},{"nav":"一级导航A","child":[{"nav":"二级导航B"}]},{"nav":"一级导航B","child":[{"nav":"二级导航C"},{"nav":"二级导航D"},{"nav":"二级导航E"},{"nav":"二级导航F"}]}]
+            </div>
+
+            <div class="right">
+                <div id="navRoot">
+
+                </div>
+                <p></p>
+            </div>
+        </div>
+
+
+    </div>
+
+
+</body>
+<script src="./jquery-3.4.1.js"></script>
+<script>
+    var genButton = $("#genBtn");
+    var data = [];
+    var isUnfold = false;
+    var previousNav;
+    function showNav(){
+        var index = parseInt($(this).attr("index"));
+        if(previousNav!=this){
+            isUnfold = true;
+            $(".childNavs").css("display","none");
+            $(".childNavs").eq(index).css("display","block");
+            previousNav = this;
+            $("p").text(isUnfold);
+        }else{
+            var a = isUnfold?"none":"block";
+            $(".childNavs").eq(index).css("display",isUnfold?"none":"block");
+            isUnfold = !isUnfold;
+            $("p").text(isUnfold);
+        } 
+    }
+
+    genButton.click(function () {
+        $("#navRoot").empty();
+        var input = $("#inputData").prop("value");
+        try {
+            data = JSON.parse(input);
+        } catch (err) {
+            alert("Incorrect Format.");
+        }
+
+        for(var i in data){              //若需要不止两层树状结构，则应该使用递归
+            var newNav = document.createElement("div");
+            newNav.innerText = data[i]["nav"];
+            $(newNav).addClass("firstNav");
+            $(newNav).addClass("nav");
+            $(newNav).attr("index",i);
+            $(newNav).click(showNav);
+            $("#navRoot").append(newNav);
+            var childNavs = document.createElement("div");
+            $(childNavs).addClass("childNavs");
+            $("#navRoot").append(childNavs);
+            var firstNav = newNav;
+            for(var j in data[i]["child"]){
+                var newNav = document.createElement("div");
+                newNav.innerText = data[i]["child"][j]["nav"];
+                $(newNav).addClass("secondNav");
+                $(newNav).addClass("nav");
+                $(childNavs).append(newNav);
+            }
+           
+        }
+
+        
+
+    });
+</script>
+
+</html>
