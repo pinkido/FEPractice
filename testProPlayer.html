@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+
+            text-align: center;
+        }
+
+        .table {
+            width: 100%;
+            display: table;
+        }
+
+        .tablerow {
+            display: table-row;
+        }
+
+        .left{
+            vertical-align: top;
+            margin: 10px 0;
+            width: 25%;
+            display: table-cell;
+        }
+        .right {
+            width: 75%;
+            display: table-cell;
+            text-align: left;
+        }
+
+        textarea {
+            font-size: 1.2em;
+            display: block;
+            margin: 10px auto;
+            width: 90%;
+            height: 50px;
+            resize: none;
+        }
+
+        .btn {
+            background-color: white;
+            border: solid 2px grey;
+            display: inline-block;
+            margin: 10px;
+            vertical-align: middle;
+            text-align: center;
+            padding: 5px;
+            line-height: 1em;
+            transition: all 0.8s, background-color 0s;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: #0090ff;
+            box-shadow: 1px 2px 5px 2px grey;
+            border: solid 2px white;
+        }
+
+        .btn:active {
+            background-color: #0075ce;
+        }
+
+        .nav {
+            transition: all 0.5s;
+        }
+
+        .nav:hover {
+            box-shadow: 1px 2px 5px 2px gray;
+            text-shadow: 2px 2px 3px white;
+        }
+
+        .firstNav {
+            display: inline-block;
+            background-color: black;
+            /* cursor: pointer; */
+            color: white;
+            /* height: 150px; */
+            width: 300px;
+            padding: 5px 0px;
+            margin: 5px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .secondNav {
+            display: inline-block;
+            background-color: #0090ff;
+            color: white;
+            width: 800px;
+            padding: 5px 10px;
+            margin: 5px;
+            text-align: left;
+        }
+
+        .childNavs {
+            /* display: none; */
+            overflow: hidden;
+            height: 0;
+            transition: all 0.8s;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="table">
+        <div class="tablerow">
+            <div class="left">
+                <textarea id="inputData"></textarea>
+                <div id="playerBtn" class="btn">Search Players</div><br>
+
+            </div>
+
+            <div class="right">
+                <div id="navRoot">
+
+                </div>
+                <p></p>
+            </div>
+        </div>
+
+
+    </div>
+
+
+</body>
+<script src="./jquery-3.4.1.js"></script>
+<script>
+    var playerButton = $("#playerBtn");
+    var data = [];
+    var heroData = [];
+    var heroName = [];
+    var proPlayers = [];
+    var isUnfold = false;
+    var rankingData=[];
+    var curPlayer;
+
+    var playerxmlhttp = new XMLHttpRequest();
+    var heroxmlhttp = new XMLHttpRequest();
+    var heronamexmlhttp = new XMLHttpRequest();
+    var rankingxmlhttp = new XMLHttpRequest();
+    // var url = "https://api.opendota.com/api/proPlayers";
+    var rootUrl = "https://api.opendota.com";
+    var playerUrl = "https://api.opendota.com/api/search?q=";
+    var rankingUrl = "https://api.opendota.com/api/players/";
+    var heroUrl = "https://api.opendota.com/api/heroStats";
+    var heronameUrl = "https://api.opendota.com/api/heroes";
+    var type = "GET";
+    playerxmlhttp.onreadystatechange = function () {
+        if (playerxmlhttp.readyState == 4 && playerxmlhttp.status == "200") {
+            data = playerxmlhttp.response;
+            $("#navRoot").empty();
+
+            try {
+                proPlayers = JSON.parse(data);
+            } catch (err) {
+                alert("Something Went Wrong.");
+            }
+
+            for (var i in proPlayers) { //若需要不止两层树状结构，则应该使用递归        
+
+                var newNav = document.createElement("div");
+                var avatar = document.createElement("img");
+                var player = proPlayers[i];
+                if (player.last_match_time) {
+                    avatar.src = player["avatarfull"];
+                    avatar.width = 50;
+                    var tempText = "<br>Name: " + player["personaname"] + "<br>Last Match Time: " + player["last_match_time"] + "<br>Similarity: " + player["similarity"];
+                    $(newNav).append(avatar);
+                    $(newNav).attr("index",i);
+                    $(newNav).append(tempText);
+                    $(newNav).addClass("firstNav");
+                    $(newNav).click(rankingCheck);
+                    $("#navRoot").append(newNav);
+                }
+            }
+
+            // localStorage.setItem("proPlayerJson",data);
+
+        }
+    };
+
+    heroxmlhttp.onreadystatechange = function(){
+        if(heroxmlhttp.readyState == 4&& heroxmlhttp.status=="200"){
+            heroData = JSON.parse(heroxmlhttp.response);
+        }
+    }
+
+    heronamexmlhttp.onreadystatechange = function(){
+        if(heronamexmlhttp.readyState == 4&& heronamexmlhttp.status=="200"){
+            heroName = JSON.parse(heronamexmlhttp.response);
+        }
+    }
+
+    rankingxmlhttp.onreadystatechange = function(){
+        if(rankingxmlhttp.readyState == 4&&rankingxmlhttp.status=="200"){
+            $("#navRoot").empty();
+            rankingData =  JSON.parse(rankingxmlhttp.response);
+            for(i in rankingData){
+                var newNav = document.createElement("div");
+                var avatar = document.createElement("img");
+                var rankingBar = document.createElement("span");
+
+                var ranking = rankingData[i];
+                if (true) {
+                    var heroPic = heroData.filter(function(i){
+                        return i.id == ranking["hero_id"];
+                    })[0].img;
+                    var heroname = heroName.filter(function(i){
+                        return i.id == ranking.hero_id;
+                    })[0].localized_name;
+
+                    avatar.src = rootUrl+heroPic;
+                    avatar.width = 80;
+                    var w = ranking.percent_rank*700;
+                    $(rankingBar).css("display","inline-block");
+                    $(rankingBar).css("color","#0090ff");
+                    $(rankingBar).css("width",w);
+                    $(rankingBar).css("height","20px");
+                    $(rankingBar).css("background-color","white");
+                    $(rankingBar).text((100-ranking.percent_rank*100).toFixed()+"%");
+                    var tempText = "<br>Name: " + heroname+"<br>Score: " + ranking.score + "<br>Ranking: " ;
+                    $(newNav).append(avatar);
+                    $(newNav).attr("index",i);
+                    $(newNav).append(tempText);
+                    $(newNav).append(rankingBar);
+                    $(newNav).addClass("secondNav");
+                    $(newNav).click(rankingCheck);
+                    $("#navRoot").append(newNav);
+                }
+            }
+            
+
+
+        }
+    }
+
+    window.onload = function () {
+        playerButton.click(generate);
+
+        heroxmlhttp.open(type,heroUrl,true);
+        heroxmlhttp.send();
+
+        heronamexmlhttp.open(type,heronameUrl,true);
+        heronamexmlhttp.send();
+
+        // if(!localStorage.proPlayerJson){
+        // playerxmlhttp.open(type,url,true);
+        // playerxmlhttp.send();
+
+        // // }else{
+        //     genButton.click(generate);
+        // }
+    }
+
+    function generate() {
+        var parameter = $("#inputData").val();
+        playerxmlhttp.open(type, playerUrl + parameter, true);
+        playerxmlhttp.send();
+    }
+
+    function rankingCheck(){
+        curPlayer =  proPlayers[$(this).attr("index")];
+        
+        url = rankingUrl+curPlayer["account_id"]+"/rankings";
+        rankingxmlhttp.open(type, url, true);
+        rankingxmlhttp.send();
+
+
+    }
+</script>
+
+</html>
